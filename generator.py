@@ -44,17 +44,25 @@ class Generator(object):
         gen_x = tensor_array_ops.TensorArray(dtype=tf.int32, size=self.sequence_length,
                                              dynamic_size=False, infer_shape=True)
 
+        # calculate single unit
         def _g_recurrence(i, x_t, h_tm1, gen_o, gen_x):
             h_t = self.g_recurrent_unit(x_t, h_tm1)  # hidden_memory_tuple
             o_t = self.g_output_unit(h_t)  # batch x vocab , logits not prob
             log_prob = tf.log(tf.nn.softmax(o_t))
+
+            #get the id of the generated word
             next_token = tf.cast(tf.reshape(tf.multinomial(log_prob, 1), [self.batch_size]), tf.int32)
+
             x_tp1 = tf.nn.embedding_lookup(self.g_embeddings, next_token)  # batch x emb_dim
+
+            #output the maximum probability
             gen_o = gen_o.write(i, tf.reduce_sum(tf.multiply(tf.one_hot(next_token, self.num_emb, 1.0, 0.0),
                                                              tf.nn.softmax(o_t)), 1))  # [batch_size] , prob
             gen_x = gen_x.write(i, next_token)  # indices, batch_size
+
             return i + 1, x_tp1, h_t, gen_o, gen_x
 
+        #loop, cond is the ending condition, the output is a sequence
         _, _, _, self.gen_o, self.gen_x = control_flow_ops.while_loop(
             cond=lambda i, _1, _2, _3, _4: i < self.sequence_length,
             body=_g_recurrence,
@@ -69,9 +77,10 @@ class Generator(object):
             dtype=tf.float32, size=self.sequence_length,
             dynamic_size=False, infer_shape=True)
 
+        #target
         ta_emb_x = tensor_array_ops.TensorArray(
             dtype=tf.float32, size=self.sequence_length)
-        ta_emb_x = ta_emb_x.unstack(self.processed_x)
+        ta_emb_x = ta_emb_x.unstack(self.processed_x) #a list of batch_size x emb_dim
 
         def _pretrain_recurrence(i, x_t, h_tm1, g_predictions):
             h_t = self.g_recurrent_unit(x_t, h_tm1)

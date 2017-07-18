@@ -118,21 +118,21 @@ def main():
             buffer = 'epoch:\t'+ str(epoch) + '\tnll:\t' + str(test_loss) + '\n'
             log.write(buffer)
 
-    print 'Start pre-training discriminator...'
-    # Train 3 epoch on the generated data and do this for 50 times
-    for _ in range(50):
-        generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
-        dis_data_loader.load_train_data(positive_file, negative_file)
-        for _ in range(3):
-            dis_data_loader.reset_pointer()
-            for it in xrange(dis_data_loader.num_batch):
-                x_batch, y_batch = dis_data_loader.next_batch()
-                feed = {
-                    discriminator.input_x: x_batch,
-                    discriminator.input_y: y_batch,
-                    discriminator.dropout_keep_prob: dis_dropout_keep_prob
-                }
-                _ = sess.run(discriminator.train_op, feed)
+    # print 'Start pre-training discriminator...'
+    # # Train 3 epoch on the generated data and do this for 50 times
+    # for _ in range(50):
+    #     generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
+    #     dis_data_loader.load_train_data(positive_file, negative_file)
+    #     for _ in range(3):
+    #         dis_data_loader.reset_pointer()
+    #         for it in xrange(dis_data_loader.num_batch):
+    #             x_batch, y_batch = dis_data_loader.next_batch()
+    #             feed = {
+    #                 discriminator.input_x: x_batch,
+    #                 discriminator.input_y: y_batch,
+    #                 discriminator.dropout_keep_prob: dis_dropout_keep_prob
+    #             }
+    #             _ = sess.run(discriminator.train_op, feed)
 
     rollout = ROLLOUT(generator, 0.8)
 
@@ -143,7 +143,7 @@ def main():
         # Train the generator for one step
         for it in range(1):
             samples = generator.generate(sess)
-            rewards = rollout.get_reward(sess, samples, 16, discriminator)
+            rewards = rollout.get_reward(sess, samples, 16)
             feed = {generator.x: samples, generator.rewards: rewards}
             _ = sess.run(generator.g_updates, feed_dict=feed)
 
@@ -160,20 +160,20 @@ def main():
         rollout.update_params()
 
         # Train the discriminator
-        for _ in range(5):
-            generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
-            dis_data_loader.load_train_data(positive_file, negative_file)
-
-            for _ in range(3):
-                dis_data_loader.reset_pointer()
-                for it in xrange(dis_data_loader.num_batch):
-                    x_batch, y_batch = dis_data_loader.next_batch()
-                    feed = {
-                        discriminator.input_x: x_batch,
-                        discriminator.input_y: y_batch,
-                        discriminator.dropout_keep_prob: dis_dropout_keep_prob
-                    }
-                    _ = sess.run(discriminator.train_op, feed)
+        # for _ in range(5):
+        #     generate_samples(sess, generator, BATCH_SIZE, generated_num, negative_file)
+        #     dis_data_loader.load_train_data(positive_file, negative_file)
+        #
+        #     for _ in range(3):
+        #         dis_data_loader.reset_pointer()
+        #         for it in xrange(dis_data_loader.num_batch):
+        #             x_batch, y_batch = dis_data_loader.next_batch()
+        #             feed = {
+        #                 discriminator.input_x: x_batch,
+        #                 discriminator.input_y: y_batch,
+        #                 discriminator.dropout_keep_prob: dis_dropout_keep_prob
+        #             }
+        #             _ = sess.run(discriminator.train_op, feed)
 
     log.close()
 
